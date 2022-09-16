@@ -32,7 +32,7 @@ jobs:
       - name: Get current Grpc release for Power
         id: current
         run: |
-          GRPC_CURRENT=$(curl -s https://api.github.com/repos/snehakpersistent/grpc/releases/latest | grep tag_name | cut -d '"' -f4)
+          GRPC_CURRENT=$(curl -s https://api.github.com/repos/IBM/oss-ecosystem-grpc/releases/latest | grep tag_name | cut -d '"' -f4)
           echo '::set-output name=CURRENT_RELEASE::'$GRPC_CURRENT
           echo "Current Grpc version on Power: "$GRPC_CURRENT
           
