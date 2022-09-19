@@ -1,9 +1,6 @@
 name: Check for new Grpc release
 
 on:
-  push:
-    branch:
-      - ppc-support
   schedule:
     - cron: '0 0 * * */7'
   workflow_dispatch:
