@@ -2,13 +2,13 @@ name: Check for new Grpc release
 
 on:
   schedule:
-    - cron: '0 0 * * */7'
+    - cron: '0/30 0 * * *'
   workflow_dispatch:
 
 jobs:
   check-release:
     runs-on: ubuntu-20.04
-    
+
     outputs:
       latest-release: ${{ steps.latest.outputs.LATEST_RELEASE }}
       current-release: ${{ steps.current.outputs.CURRENT_RELEASE }}
@@ -16,26 +16,28 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Get latest Grpc release
-        id: latest
+      - name: Install dependencies
         run: |
           sudo apt-get update -y
           sudo apt-get install -y curl jq
-          
+
+      - name: Get latest Grpc release
+        id: latest
+        run: |
           GRPC_LATEST=$(curl -s https://pypi.org/pypi/grpcio/json | jq -r '.info.version')
           echo '::set-output name=LATEST_RELEASE::'$GRPC_LATEST
           echo "Latest Grpc version: "$GRPC_LATEST
-          
+
       - name: Get current Grpc release for Power
         id: current
         run: |
           GRPC_CURRENT=$(curl -s https://api.github.com/repos/IBM/oss-ecosystem-grpc/releases/latest | grep tag_name | cut -d '"' -f4)
           echo '::set-output name=CURRENT_RELEASE::'$GRPC_CURRENT
           echo "Current Grpc version on Power: "$GRPC_CURRENT
-          
+
   build-new-release:
     needs: [check-release]
     if: ${{ needs.check-release.outputs.latest-release }} != ${{ needs.check-release.outputs.current-release }}
     uses: ./.github/workflows/build_grpc.yaml
     with:
-      release: 1.46.3
+      release: ${{ needs.check-release.outputs.latest-release }}

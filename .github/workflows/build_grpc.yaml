@@ -1,6 +1,11 @@
 name: Build grpc wheel on Power
 
 on:
+  workflow_dispatch:
+    inputs:
+      release:
+        required: true
+        type: string
   workflow_call:
     inputs:
       release:
@@ -12,50 +17,48 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-      - uses: actions/checkout@v2  
-      - uses: uraimo/run-on-arch-action@v2.2.0
-        name: Install dependencies and build grpc
-        id: build
+      - uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
         with:
-          arch: ppc64le
-          distro: ubuntu20.04
-          
-          # Create an artifacts directory
-          setup: |
-            mkdir -p "${PWD}/artifacts"
-          
-          # Mount the artifacts directory as /artifacts in the container
-          dockerRunArgs: |
-            --volume "${PWD}/artifacts:/artifacts"
-            
-      
-          run: |            
-            apt-get update -y
-            apt-get install -y build-essential autoconf libtool pkg-config git software-properties-common curl 
-            add-apt-repository ppa:deadsnakes/ppa -y
-            apt-get install python3.9 python3-pip python3-dev libpython3.9-dev -y
-            
-            #Building grpc
-            python3.9 -m pip install --upgrade pip
-            echo "Building grpc ${{ inputs.release }}"
-            pip install grpcio==${{ inputs.release }} 
-            
-            WHEEL_PATH=$(find /root/.cache/pip/wheels/ -name "grpcio*.whl")
-            WHEEL_NAME=$(basename $(find /root/.cache/pip/wheels/ -name "grpcio*.whl"))
-            echo $WHEEL_PATH
-            echo $WHEEL_NAME
-            cp $WHEEL_PATH /artifacts/$WHEEL_NAME
-            ls /artifacts/            
-                      
+          platforms:  "linux/ppc64le"
+
+      - name: Create a tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "<>"
+          git tag ${{ inputs.release }}
+          git push origin ${{ inputs.release }} -f
+
+      - name: Install
+        run: >-
+          docker run
+          --rm
+          --platform "linux/ppc64le"
+          --mount "type=bind,src=$(pwd),dst=/build"
+          -w "/build"
+          "ubuntu:latest"
+          /bin/bash -c '
+          export DEBIAN_FRONTEND=noninteractive;
+          apt-get update -y && apt-get install -y build-essential autoconf libtool pkg-config git software-properties-common curl;
+          add-apt-repository ppa:deadsnakes/ppa -y;
+          apt-get install python3.9 python3-pip python3-dev libpython3.9-dev -y;
+          python3.9 -m pip install --upgrade pip;
+          echo "Building grpc ${{ inputs.release }}";
+          pip install grpcio==${{ inputs.release }};
+          WHEEL_PATH=$(find /root/.cache/pip/wheels/ -name "grpcio*.whl");
+          echo $WHEEL_PATH;
+          cp $WHEEL_PATH /build/;
+
       - name: Create Release
-        id: create_release
-        uses: ncipollo/release-action@v1
+        uses: softprops/action-gh-release@v1
         with:
-          tag: ${{ inputs.release }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          allowUpdates: true
-          artifacts: ./artifacts/grpcio-${{ inputs.release }}-cp39-cp39-linux_ppc64le.whl
           name: ${{ inputs.release }}
-          replacesArtifacts: true
+          tag_name: ${{ inputs.release }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: ./grpcio-${{ inputs.release }}-cp39-cp39-linux_ppc64le.whl
           draft: false
           prerelease: false
