@@ -26,20 +26,11 @@ jobs:
       - name: Install
         id: install
         run: >-
-          docker run
-          --rm
-          --platform "linux/ppc64le"
+          docker run --rm --platform "linux/ppc64le"
           --mount "type=bind,src=$(pwd),dst=/build"
-          -w "/build"
-          "ubuntu:20.04"
-          /bin/bash -ec '
-          export DEBIAN_FRONTEND=noninteractive;
-          apt-get update -y && apt-get install -y build-essential autoconf libtool pkg-config git software-properties-common curl;
-          add-apt-repository ppa:deadsnakes/ppa -y;
-          apt-get install python3.9 python3.9-dev python3.9-distutils python3-pip -y;
-          python3.9 -m pip install --upgrade pip;
-          echo "Building grpc ${{ inputs.release }}";
+          -w "/build" ppc64le/python:3.9 /bin/bash -ec '
           export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1;
+          pip install --upgrade pip;
           pip install grpcio==${{ inputs.release }};
           WHEEL_PATH=$(find /root/.cache/pip/wheels/ -name "grpcio*.whl");
           cp $WHEEL_PATH /build/;'          
