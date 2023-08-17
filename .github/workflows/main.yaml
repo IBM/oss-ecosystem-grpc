@@ -14,7 +14,7 @@ jobs:
       current-release: ${{ steps.current.outputs.CURRENT_RELEASE }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install dependencies
         run: |
@@ -25,14 +25,14 @@ jobs:
         id: latest
         run: |
           GRPC_LATEST=$(curl -s https://pypi.org/pypi/grpcio/json | jq -r '.info.version')
-          echo '::set-output name=LATEST_RELEASE::'$GRPC_LATEST
+          echo "LATEST_RELEASE=$GRPC_LATEST" >> $GITHUB_OUTPUT
           echo "Latest Grpc version: "$GRPC_LATEST
 
       - name: Get current Grpc release for Power
         id: current
         run: |
           GRPC_CURRENT=$(curl -s https://api.github.com/repos/IBM/oss-ecosystem-grpc/releases/latest | grep tag_name | cut -d '"' -f4)
-          echo '::set-output name=CURRENT_RELEASE::'$GRPC_CURRENT
+          echo "CURRENT_RELEASE=$GRPC_CURRENT" >> $GITHUB_OUTPUT
           echo "Current Grpc version on Power: "$GRPC_CURRENT
 
   build-new-release:
