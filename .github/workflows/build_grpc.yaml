@@ -22,18 +22,7 @@ jobs:
         uses: docker/setup-qemu-action@v2
         with:
           platforms:  "linux/ppc64le"
-
-      - name: Install
-        id: install
-        run: >-
-          docker run --rm --platform "linux/ppc64le"
-          --mount "type=bind,src=$(pwd),dst=/build"
-          -w "/build" ppc64le/python:3.9 /bin/bash -ec '
-          export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1;
-          pip install --upgrade pip;
-          pip install grpcio==${{ inputs.release }};
-          WHEEL_PATH=$(find /root/.cache/pip/wheels/ -name "grpcio*.whl");
-          cp $WHEEL_PATH /build/;'          
+         
 
       - name: Create a tag
         env:
