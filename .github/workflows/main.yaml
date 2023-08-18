@@ -2,12 +2,12 @@ name: Check for new Grpc release
 
 on:
   schedule:
-    - cron: '0/30 0 * * *'
+    - cron: '0 0 * * 0'
   workflow_dispatch:
 
 jobs:
   check-release:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
 
     outputs:
       latest-release: ${{ steps.latest.outputs.LATEST_RELEASE }}
