@@ -37,7 +37,7 @@ jobs:
 
   build-new-release:
     needs: [check-release]
-    if: ${{ needs.check-release.outputs.latest-release }} != ${{ needs.check-release.outputs.current-release }}
+    if: needs.check-release.outputs.latest-release != needs.check-release.outputs.current-release
     uses: ./.github/workflows/build_grpc.yaml
     with:
       release: ${{ needs.check-release.outputs.latest-release }}
