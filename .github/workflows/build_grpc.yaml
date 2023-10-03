@@ -32,6 +32,7 @@ jobs:
           -w "/build" ppc64le/python:3.9 /bin/bash -ec '
           export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1;
           pip install --upgrade pip;
+          pip install --upgrade setuptools;
           pip install grpcio==${{ inputs.release }};
           WHEEL_PATH=$(find /root/.cache/pip/wheels/ -name "grpcio*.whl");
           cp $WHEEL_PATH /build/;'          
