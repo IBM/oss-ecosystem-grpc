@@ -16,6 +16,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        python_version: [3.9, 3.12]
+
     steps:
       - uses: actions/checkout@v4
 
@@ -24,41 +28,39 @@ jobs:
         with:
           platforms: "linux/ppc64le"
 
-      - name: Install
-        id: install
+      - name: Build grpcio wheel for Python ${{ matrix.python_version }}
         run: >-
           docker run --rm --platform "linux/ppc64le"
           --mount "type=bind,src=$(pwd),dst=/build"
-          -w "/build" ppc64le/python:3.9 /bin/bash -ec '
+          -w "/build" ppc64le/python:${{ matrix.python_version }} /bin/bash -ec '
           export GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1;
-          pip install --upgrade pip;
-          pip install --upgrade setuptools;
+          pip install --upgrade pip setuptools wheel;
           pip install grpcio==${{ inputs.release }};
-          WHEEL_PATH=$(find /root/.cache/pip/wheels/ -name "grpcio*.whl");
-          cp $WHEEL_PATH /build/;'          
+          WHEEL_PATH=$(find /root/.cache/pip/wheels/ -name "grpcio*.whl" | head -n 1);
+          cp "$WHEEL_PATH" /build/;'
 
-      - name: Create a tag
+      - name: Create Git Tag (only once)
+        if: matrix.python_version == '3.9'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "GitHub Actions"
-          git config user.email "<>"
+          git config user.email "actions@github.com"
           git tag ${{ inputs.release }}
           git push origin ${{ inputs.release }} -f
 
-      - name: Capture the file
+      - name: Capture wheel path
         id: capture
         run: |
-          WHEEL_PATH=$(find $PWD -name "grpcio*.whl")
-          echo "Found $WHEEL_PATH"
-          echo "ARTIFACT=$WHEEL_PATH" >> $GITHUB_OUTPUT
+          WHEEL=$(find . -name "grpcio*.whl" -type f)
+          echo "WHEEL=$WHEEL" >> $GITHUB_OUTPUT
 
-      - name: Create Release
+      - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: ${{ inputs.release }}
           tag_name: ${{ inputs.release }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          files: ${{ steps.capture.outputs.ARTIFACT }}
+          files: ${{ steps.capture.outputs.WHEEL }}
           draft: false
           prerelease: false
